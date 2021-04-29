@@ -3,22 +3,20 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from object_detection.utils import ops as utils_ops
+# From the Tensorflow API
 from object_detection.utils import label_map_util as label
 from object_detection.utils import visualization_utils as visualization
 
-from enum import Enum
-
+# from enum import Enum
 #{ 1: {'id': 1, 'name': 'person'}
 #  2: {'id': 2, 'name': 'bicycle'}
 #  10: {'id': 10, 'name': 'traffic light'}
 #  13: {'id': 13, 'name': 'stop sign'} }
-class Road(Enum):
-  PERSON = 1
-  BICYCLE = 2
-  TRAFFIC_LIGHT = 10
-  STOP_SIGN = 13
-
+#class Road(Enum):
+#  PERSON = 1
+#  BICYCLE = 2
+#  TRAFFIC_LIGHT = 10
+#  STOP_SIGN = 13
 #objects_to_detect = [Road.PERSON, Road.BICYCLE, Road.TRAFFIC_LIGHT, Road.STOP_SIGN]
 
 def real_time_inference(model, image):
@@ -101,8 +99,8 @@ def draw_box_around_object(model, frame):
     return {"bounding_box": image_array, "found_obj": False}
 
 
-# A stop sign was detected so I will need to send a signal to the Arduino
-# to STOP the car's movement for 3 seconds
+# One of the specified objects were detected by the model
+# Need to send a signal to the Arduino to stop movement
 def sendSignaltoArduino():
   print("Signal")
   return True
