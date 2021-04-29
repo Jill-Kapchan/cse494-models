@@ -1,3 +1,12 @@
+#------------------------------------------------------------
+# Name: Jill Kapchan
+# CSE 494: Intro to Robotics
+# Description: Using a pre-trained model, this code detects
+# people, bicycles, traffic lights, and stop signs and signals
+# an Arduino car, through bluetooth, to stop all movement
+# while at least one of the specified objects is in the frame.
+#------------------------------------------------------------
+
 import cv2 as cv
 import numpy as np
 import os
@@ -47,8 +56,8 @@ def real_time_inference(model, image):
   #     detection_scores
   #     detection_boxes
   #     detection_classes
-  for key, value in result_dict.items():
-    result_dict[key] = value[0, :num_detections].numpy()  
+  for key, val in result_dict.items():
+    result_dict[key] = val[0, :num_detections].numpy()  
 
   # The values in key='detection_classes' are of type float32
   # The visualization method requires this to be of type int and not numpy.float64
@@ -99,25 +108,28 @@ def draw_box_around_object(model, frame):
     return {"bounding_box": image_array, "found_obj": False}
 
 
-# One of the specified objects were detected by the model
-# Need to send a signal to the Arduino to stop movement
-def sendSignaltoArduino():
-  print("Signal")
-  return True
-
-
 #------------------------------------------------------------
 # Try to connect this Python script to the bluetooth module
 # on the Arduino
 #------------------------------------------------------------
+import serial
+import time
 
+print("Started Bluetooth connection")
 
+# Ports on the PC are COM5 and COM6
+port = 'COM5'
+
+# Baud rate set on the HC-05 module is 38400
+bluetooth = serial.Serial(port, 38400)
+
+print("Connected")
+bluetooth.flushInput()
 #------------------------------------------------------------
 # Load the pretrained model
 #------------------------------------------------------------
 pretrained_model = tf.compat.v2.saved_model.load("./models/ssd_inception_v2_coco_2017_11_17/saved_model", None)
 # print(list(pretrained_model.signatures.keys()))
-
 #------------------------------------------------------------
 # Open the webcam to start detecting objects
 #------------------------------------------------------------
@@ -129,12 +141,22 @@ while True:
     img_results = draw_box_around_object(pretrained_model, frame)
     cv.imshow('Stop sign detection', cv.resize(img_results["bounding_box"], (1280, 960)))
 
-    # If a object was detected, send a signal to the Arduino
+    # One of the specified objects were detected by the model
+    # Need to send a signal to the Arduino to stop movement
     if(img_results["found_obj"]):
-      sendSignaltoArduino()
+      # Clean Bluetooth buffer
+      bluetooth.flushInput()
 
+      # The Arduino is expecting bytes to come in through Bluetooth
+      bluetooth.write(b"detect")
+      print("Sent a signal to the Arduino")
+
+    # Break out of object detection loop
     if cv.waitKey(10) & 0xFF == ord('q') or img_results["found_obj"] == True:
         break
 
+# Release connections
 video.release()
 cv.destroyAllWindows()
+bluetooth.close()
+print("Disconnected from Bluetooth")
