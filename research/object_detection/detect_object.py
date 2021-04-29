@@ -84,7 +84,7 @@ def draw_box_around_object(model, frame):
       classes,
       scores,
       label.create_category_index_from_labelmap('./data/mscoco_label_map.pbtxt', use_display_name=True),
-      instance_masks=output_dict.get('detection_masks_reframed', None),
+      instance_masks=output.get('detection_masks_reframed', None),
       use_normalized_coordinates=True,
       line_thickness=7)
 
@@ -100,7 +100,7 @@ def draw_box_around_object(model, frame):
   found = False
 
   #if len(s_classes) == 1 and s_classes in objects_to_detect:
-  if s_classes in [1, 2, 10, 13]:
+  if s_classes in [1, 2, 10, 13].any():
     #print(s_classes)
     # Trigger a bool to notify the Arduino that the car needs to stop
     return {"bounding_box": image_array, "found_obj": True}
@@ -108,6 +108,11 @@ def draw_box_around_object(model, frame):
     return {"bounding_box": image_array, "found_obj": False}
 
 
+#------------------------------------------------------------
+# Log results to an external text file
+# Tail -f 
+#------------------------------------------------------------
+logFile = open("MyFile.txt","a")
 #------------------------------------------------------------
 # Try to connect this Python script to the bluetooth module
 # on the Arduino
@@ -118,7 +123,7 @@ import time
 print("Started Bluetooth connection")
 
 # Ports on the PC are COM5 and COM6
-port = 'COM5'
+port = 'COM6'
 
 # Baud rate set on the HC-05 module is 38400
 bluetooth = serial.Serial(port, 38400)
@@ -133,6 +138,8 @@ pretrained_model = tf.compat.v2.saved_model.load("./models/ssd_inception_v2_coco
 #------------------------------------------------------------
 # Open the webcam to start detecting objects
 #------------------------------------------------------------
+print("Sleeping for 15s to get a Bluetooth connection")
+time.sleep(15)
 video = cv.VideoCapture(0)
 
 while True:
@@ -152,7 +159,7 @@ while True:
       print("Sent a signal to the Arduino")
 
     # Break out of object detection loop
-    if cv.waitKey(10) & 0xFF == ord('q') or img_results["found_obj"] == True:
+    if cv.waitKey(10) & 0xFF == ord('q'): #or img_results["found_obj"] == True:
         break
 
 # Release connections
@@ -160,3 +167,4 @@ video.release()
 cv.destroyAllWindows()
 bluetooth.close()
 print("Disconnected from Bluetooth")
+logFile.close()
