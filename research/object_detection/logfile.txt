@@ -1,0 +1,15 @@
+Started Bluetooth connection
+Failed to connect
+Started Bluetooth connection
+Connected
+Found object!
+Sending signal to Arduino...
+Sent a signal to the Arduino
+Found object!
+Sending signal to Arduino...
+Sent a signal to the Arduino
+Found object!
+Sending signal to Arduino...
+Sent a signal to the Arduino
+Found object!
+Sending signal to Arduino...

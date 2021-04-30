@@ -16,6 +16,11 @@ import tensorflow as tf
 from object_detection.utils import label_map_util as label
 from object_detection.utils import visualization_utils as visualization
 
+#------------------------------------------------------------
+# Print in real time to the text file
+#------------------------------------------------------------
+logFile = open('./logFile.txt', 'a')
+
 # from enum import Enum
 #{ 1: {'id': 1, 'name': 'person'}
 #  2: {'id': 2, 'name': 'bicycle'}
@@ -95,13 +100,13 @@ def draw_box_around_object(model, frame):
   #  10: {'id': 10, 'name': 'traffic light'}
   #  13: {'id': 13, 'name': 'stop sign'} }
   #------------------------------------------------------------
-  # Demand at least 75% confidence in object classification
-  s_classes = classes[scores > 0.75]
-  found = False
+  # Demand at least 70% confidence in object classification
+  s_classes = classes[scores > 0.70]
 
   #if len(s_classes) == 1 and s_classes in objects_to_detect:
-  if s_classes in [1, 2, 10, 13].any():
-    #print(s_classes)
+  if len(s_classes) == 1 and s_classes[0] in [1, 2, 10, 13, 64]:
+    logFile.write("Found object!\n")
+    print(s_classes)
     # Trigger a bool to notify the Arduino that the car needs to stop
     return {"bounding_box": image_array, "found_obj": True}
   else:
@@ -109,27 +114,27 @@ def draw_box_around_object(model, frame):
 
 
 #------------------------------------------------------------
-# Log results to an external text file
-# Tail -f 
-#------------------------------------------------------------
-logFile = open("MyFile.txt","a")
-#------------------------------------------------------------
 # Try to connect this Python script to the bluetooth module
 # on the Arduino
 #------------------------------------------------------------
 import serial
 import time
 
-print("Started Bluetooth connection")
+try:
+  logFile.write("Started Bluetooth connection\n")
 
-# Ports on the PC are COM5 and COM6
-port = 'COM6'
+  # Ports on the PC are COM5 and COM6
+  port = 'COM6'
 
-# Baud rate set on the HC-05 module is 38400
-bluetooth = serial.Serial(port, 38400)
+  # Baud rate set on the HC-05 module is 38400
+  bluetooth = serial.Serial(port, 38400)
 
-print("Connected")
-bluetooth.flushInput()
+  logFile.write("Connected\n")
+  logFile.flush()
+except:
+  logFile.write("Failed to connect\n")
+  logFile.flush()
+
 #------------------------------------------------------------
 # Load the pretrained model
 #------------------------------------------------------------
@@ -138,8 +143,6 @@ pretrained_model = tf.compat.v2.saved_model.load("./models/ssd_inception_v2_coco
 #------------------------------------------------------------
 # Open the webcam to start detecting objects
 #------------------------------------------------------------
-print("Sleeping for 15s to get a Bluetooth connection")
-time.sleep(15)
 video = cv.VideoCapture(0)
 
 while True:
@@ -152,11 +155,16 @@ while True:
     # Need to send a signal to the Arduino to stop movement
     if(img_results["found_obj"]):
       # Clean Bluetooth buffer
-      bluetooth.flushInput()
+      logFile.write("Sending signal to Arduino...\n")
+      logFile.flush()
 
       # The Arduino is expecting bytes to come in through Bluetooth
-      bluetooth.write(b"detect")
-      print("Sent a signal to the Arduino")
+      bluetooth.flushInput()
+      bluetooth.write(b'a')
+      logFile.write("Sent a signal to the Arduino\n")
+      logFile.flush()
+
+      bluetooth.flushInput()
 
     # Break out of object detection loop
     if cv.waitKey(10) & 0xFF == ord('q'): #or img_results["found_obj"] == True:
@@ -166,5 +174,6 @@ while True:
 video.release()
 cv.destroyAllWindows()
 bluetooth.close()
-print("Disconnected from Bluetooth")
+logFile.write("Disconnected from Bluetooth\n")
+logFile.flush()
 logFile.close()
